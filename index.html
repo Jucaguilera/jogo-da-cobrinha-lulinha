@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101713">
+  <title>Jogo da cobrinha Lulinha</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #101713;
+      color: #f2f6ef;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      --muted: #98a69b;
+      --green: #a7f36b;
+      --panel: #19221c;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px 16px;
+      background:
+        linear-gradient(rgb(12 18 14 / 48%), rgb(12 18 14 / 58%)),
+        url("assets/planalto.jpg") center / cover fixed,
+        #101713;
+    }
+
+    .game {
+      width: min(100%, 480px);
+    }
+
+    .heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    .eyebrow {
+      margin: 0 0 5px;
+      color: var(--green);
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.7rem, 7vw, 2.25rem);
+      letter-spacing: -0.055em;
+    }
+
+    .stats {
+      display: flex;
+      gap: 10px;
+    }
+
+    .stat {
+      min-width: 76px;
+      padding: 9px 12px;
+      border: 1px solid #2a382e;
+      border-radius: 12px;
+      background: rgb(25 34 28 / 88%);
+      text-align: center;
+    }
+
+    .stat-label {
+      display: block;
+      margin-bottom: 2px;
+      color: var(--muted);
+      font-size: 0.64rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .stat strong {
+      color: var(--green);
+      font-size: 1.15rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .board-wrap {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid #334339;
+      border-radius: 18px;
+      background: #18221b;
+      box-shadow: 0 24px 80px rgb(0 0 0 / 35%), 0 0 0 6px rgb(167 243 107 / 3%);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1;
+      touch-action: none;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgb(12 18 14 / 67%);
+      text-align: center;
+      backdrop-filter: blur(3px);
+    }
+
+    .overlay[hidden] { display: none; }
+
+    .overlay-content {
+      max-width: 280px;
+    }
+
+    .overlay h2 {
+      margin: 0 0 8px;
+      font-size: 1.8rem;
+      letter-spacing: -0.04em;
+    }
+
+    .overlay p {
+      margin: 0 0 18px;
+      color: #c0c9c1;
+      line-height: 1.5;
+    }
+
+    button {
+      border: 0;
+      border-radius: 11px;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 120ms ease, background 120ms ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(1px); }
+    button:focus-visible { outline: 3px solid #e9ffd4; outline-offset: 3px; }
+
+    .primary {
+      padding: 12px 20px;
+      background: var(--green);
+      color: #152010;
+    }
+
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 15px;
+    }
+
+    .help {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    .credits {
+      margin: 14px 0 0;
+      color: #839188;
+      font-size: 0.7rem;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .credits a { color: #aab8ad; }
+
+    .pause {
+      flex: 0 0 auto;
+      padding: 9px 13px;
+      border: 1px solid #344338;
+      background: var(--panel);
+      color: #e8eee8;
+    }
+
+    .dpad {
+      display: none;
+      grid-template-columns: repeat(3, 54px);
+      grid-template-rows: repeat(2, 48px);
+      justify-content: center;
+      gap: 7px;
+      margin-top: 18px;
+      touch-action: manipulation;
+    }
+
+    .dpad button {
+      background: #253329;
+      color: var(--green);
+      font-size: 1.25rem;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .dpad button:active { background: #354a39; }
+    .dpad [data-dir="up"] { grid-column: 2; grid-row: 1; }
+    .dpad [data-dir="left"] { grid-column: 1; grid-row: 2; }
+    .dpad [data-dir="down"] { grid-column: 2; grid-row: 2; }
+    .dpad [data-dir="right"] { grid-column: 3; grid-row: 2; }
+
+    @media (pointer: coarse), (max-width: 600px) {
+      .dpad { display: grid; }
+      .help { font-size: 0.76rem; }
+    }
+
+    @media (max-width: 370px) {
+      .heading { align-items: flex-start; flex-direction: column; gap: 12px; }
+      .stat { min-width: 70px; }
+    }
+
+    @media (max-height: 760px) {
+      body { padding: 8px 12px; }
+      .game { width: min(100%, calc(100vh - 160px), 430px); }
+      .heading { margin-bottom: 8px; }
+      .eyebrow { font-size: 0.6rem; }
+      h1 { font-size: clamp(1.2rem, 4vh, 1.55rem); }
+      .stats { gap: 6px; }
+      .stat { min-width: 62px; padding: 6px 8px; }
+      .stat-label { font-size: 0.55rem; }
+      .stat strong { font-size: 0.95rem; }
+      .controls-row { margin-top: 8px; }
+      .help { font-size: 0.7rem; }
+      .pause { padding: 7px 10px; }
+      .credits { margin-top: 7px; font-size: 0.6rem; line-height: 1.25; }
+      .overlay { padding: 16px; }
+      .overlay h2 { font-size: 1.4rem; }
+      .overlay p { margin-bottom: 12px; font-size: 0.88rem; }
+      .primary { padding: 9px 15px; }
+    }
+
+    @media (pointer: coarse) and (max-height: 760px) {
+      .game { width: min(100%, calc(100vh - 290px), 430px); }
+      .dpad {
+        grid-template-columns: repeat(3, 48px);
+        grid-template-rows: repeat(2, 40px);
+        margin-top: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="game">
+    <header class="heading">
+      <div>
+        <p class="eyebrow">Um clássico de arcade</p>
+        <h1>Jogo da cobrinha Lulinha</h1>
+      </div>
+      <div class="stats" aria-label="Pontuação">
+        <div class="stat"><span class="stat-label">Pontos</span><strong id="score">0</strong></div>
+        <div class="stat"><span class="stat-label">Recorde</span><strong id="best">0</strong></div>
+      </div>
+    </header>
+
+    <section class="board-wrap" aria-label="Área do jogo">
+      <canvas id="board" width="480" height="480" aria-label="Tabuleiro: Lula é a cobrinha e Bolsonaro é o alimento"></canvas>
+      <div class="overlay" id="overlay">
+        <div class="overlay-content">
+          <h2 id="overlay-title">Preparado?</h2>
+          <p id="overlay-message">Lula é a cobrinha e Bolsonaro é o alimento. Pegue os rostos, cresça e evite as paredes e a si mesmo.</p>
+          <button class="primary" id="start-button" type="button">Começar a jogar</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="controls-row">
+      <p class="help">Use as setas ou <strong>W A S D</strong> para mover.<br><strong>Espaço</strong> para pausar.</p>
+      <button class="pause" id="pause-button" type="button">Pausar</button>
+    </div>
+
+    <p class="credits">
+      Fotos: <a href="https://commons.wikimedia.org/wiki/File:Foto_oficial_de_Luiz_In%C3%A1cio_Lula_da_Silva_(maior).jpg" target="_blank" rel="noreferrer">Ricardo Stuckert/PR</a> (Lula) e
+      <a href="https://commons.wikimedia.org/wiki/File:Jair_Bolsonaro_2019_Portrait_(3x4_cropped).jpg" target="_blank" rel="noreferrer">Isac Nóbrega/PR</a> (Bolsonaro), sob licença
+      <a href="https://creativecommons.org/licenses/by/2.0/" target="_blank" rel="noreferrer">CC BY 2.0</a>.
+      Plano de fundo: <a href="https://commons.wikimedia.org/wiki/File:Palacio_do_Planalto.jpeg" target="_blank" rel="noreferrer">Palácio do Planalto</a>, foto de Annemariebr (domínio público).
+    </p>
+
+    <nav class="dpad" aria-label="Controles direcionais">
+      <button type="button" data-dir="up" aria-label="Mover para cima">↑</button>
+      <button type="button" data-dir="left" aria-label="Mover para a esquerda">←</button>
+      <button type="button" data-dir="down" aria-label="Mover para baixo">↓</button>
+      <button type="button" data-dir="right" aria-label="Mover para a direita">→</button>
+    </nav>
+  </main>
+
+  <script>
+    (() => {
+      const canvas = document.querySelector("#board");
+      const ctx = canvas.getContext("2d");
+      const cells = 8;
+      const cellSize = canvas.width / cells;
+      const scoreElement = document.querySelector("#score");
+      const bestElement = document.querySelector("#best");
+      const overlay = document.querySelector("#overlay");
+      const overlayTitle = document.querySelector("#overlay-title");
+      const overlayMessage = document.querySelector("#overlay-message");
+      const startButton = document.querySelector("#start-button");
+      const pauseButton = document.querySelector("#pause-button");
+      const portraits = {
+        lula: new Image(),
+        bolsonaro: new Image()
+      };
+      const boardBackground = new Image();
+      const directions = {
+        up: { x: 0, y: -1 },
+        down: { x: 0, y: 1 },
+        left: { x: -1, y: 0 },
+        right: { x: 1, y: 0 }
+      };
+
+      let snake;
+      let food;
+      let direction;
+      let nextDirection;
+      let score = 0;
+      let best = Number(localStorage.getItem("snake-best") || 0);
+      let timer = null;
+      let state = "ready";
+
+      bestElement.textContent = best;
+      portraits.lula.onload = draw;
+      portraits.bolsonaro.onload = draw;
+      portraits.lula.src = "assets/lula.jpg";
+      portraits.bolsonaro.src = "assets/bolsonaro.jpg";
+      boardBackground.onload = draw;
+      boardBackground.src = "assets/planalto.jpg";
+
+      function draw() {
+        ctx.fillStyle = "#18221b";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        if (boardBackground.complete && boardBackground.naturalWidth > 0) {
+          const sourceSize = Math.min(boardBackground.naturalWidth, boardBackground.naturalHeight);
+          const sourceX = (boardBackground.naturalWidth - sourceSize) / 2;
+          ctx.globalAlpha = 0.5;
+          ctx.drawImage(
+            boardBackground,
+            sourceX, 0, sourceSize, sourceSize,
+            0, 0, canvas.width, canvas.height
+          );
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = "rgb(12 18 14 / 52%)";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        ctx.strokeStyle = "rgb(255 255 255 / 3.5%)";
+        ctx.lineWidth = 1;
+        for (let i = 1; i < cells; i++) {
+          const position = i * cellSize;
+          ctx.beginPath();
+          ctx.moveTo(position, 0);
+          ctx.lineTo(position, canvas.height);
+          ctx.moveTo(0, position);
+          ctx.lineTo(canvas.width, position);
+          ctx.stroke();
+        }
+
+        if (food) {
+          const centerX = (food.x + 0.5) * cellSize;
+          const centerY = (food.y + 0.5) * cellSize;
+          ctx.fillStyle = "rgb(255 210 95 / 20%)";
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, cellSize * 0.48, 0, Math.PI * 2);
+          ctx.fill();
+          drawPortrait(centerX, centerY, cellSize * 0.48, "bolsonaro");
+        }
+
+        if (!snake) return;
+        snake.slice(1).forEach(segment => {
+          const inset = cellSize * 0.1;
+          const x = segment.x * cellSize + inset;
+          const y = segment.y * cellSize + inset;
+          const size = cellSize - inset * 2;
+          ctx.fillStyle = "#8bd958";
+          roundedRect(ctx, x, y, size, size, cellSize * 0.16);
+          ctx.fill();
+        });
+
+        const head = snake[0];
+        drawPortrait((head.x + 0.5) * cellSize, (head.y + 0.5) * cellSize, cellSize * 0.48, "lula");
+      }
+
+      function drawPortrait(centerX, centerY, radius, identity) {
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.scale(radius / 10, radius / 10);
+        ctx.beginPath();
+        ctx.arc(0, 0, 9.7, 0, Math.PI * 2);
+        ctx.clip();
+
+        const portrait = portraits[identity];
+        if (portrait.complete && portrait.naturalWidth > 0) {
+          const sourceSize = Math.min(portrait.naturalWidth, portrait.naturalHeight);
+          const sourceX = (portrait.naturalWidth - sourceSize) / 2;
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(portrait, sourceX, 0, sourceSize, sourceSize, -9.7, -9.7, 19.4, 19.4);
+          ctx.restore();
+          ctx.strokeStyle = identity === "lula" ? "#d1f8af" : "#f4d96b";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+          ctx.stroke();
+          return;
+        }
+
+        if (identity === "lula") {
+          ctx.fillStyle = "#b9744e";
+          ctx.fillRect(-10, -10, 20, 20);
+          ctx.fillStyle = "#b92735";
+          ctx.beginPath();
+          ctx.moveTo(-10, 6);
+          ctx.lineTo(-4, 3);
+          ctx.lineTo(0, 7);
+          ctx.lineTo(4, 3);
+          ctx.lineTo(10, 6);
+          ctx.lineTo(10, 11);
+          ctx.lineTo(-10, 11);
+          ctx.fill();
+          ctx.fillStyle = "#d69a70";
+          ctx.beginPath();
+          ctx.ellipse(0, -0.4, 6.4, 7.6, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#d9d8cd";
+          ctx.beginPath();
+          ctx.moveTo(-6.4, 0);
+          ctx.quadraticCurveTo(-9, 4, -4, 8);
+          ctx.quadraticCurveTo(0, 11, 4, 8);
+          ctx.quadraticCurveTo(9, 4, 6.4, 0);
+          ctx.quadraticCurveTo(4, 4, 0, 3);
+          ctx.quadraticCurveTo(-4, 4, -6.4, 0);
+          ctx.fill();
+          ctx.fillStyle = "#e5e1d6";
+          ctx.beginPath();
+          ctx.moveTo(-6.2, -3);
+          ctx.quadraticCurveTo(-8, -10, -1, -9);
+          ctx.quadraticCurveTo(5, -11, 7, -5);
+          ctx.lineTo(5, -3);
+          ctx.quadraticCurveTo(0, -6, -5, -3);
+          ctx.fill();
+          ctx.fillStyle = "#dddcd2";
+          ctx.beginPath();
+          ctx.moveTo(-4.5, 1);
+          ctx.quadraticCurveTo(-2.5, -1, 0, 1);
+          ctx.quadraticCurveTo(2.5, -1, 4.5, 1);
+          ctx.quadraticCurveTo(2, 3.5, 0, 2.5);
+          ctx.quadraticCurveTo(-2, 3.5, -4.5, 1);
+          ctx.fill();
+          ctx.fillStyle = "#352b27";
+          ctx.fillRect(-3.7, -1.2, 1.3, 0.8);
+          ctx.fillRect(2.4, -1.2, 1.3, 0.8);
+          ctx.fillStyle = "#604234";
+          ctx.fillRect(-0.5, -0.8, 1, 3.1);
+        } else {
+          ctx.fillStyle = "#397946";
+          ctx.fillRect(-10, -10, 20, 20);
+          ctx.fillStyle = "#e5c840";
+          ctx.beginPath();
+          ctx.moveTo(-10, 7);
+          ctx.lineTo(-3, 4);
+          ctx.lineTo(0, 8);
+          ctx.lineTo(3, 4);
+          ctx.lineTo(10, 7);
+          ctx.lineTo(10, 11);
+          ctx.lineTo(-10, 11);
+          ctx.fill();
+          ctx.fillStyle = "#e7b38e";
+          ctx.beginPath();
+          ctx.ellipse(0, -0.3, 6.4, 7.6, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#47382e";
+          ctx.beginPath();
+          ctx.moveTo(-6.2, -3);
+          ctx.quadraticCurveTo(-8.5, -9, -2, -9);
+          ctx.quadraticCurveTo(2, -11, 7, -6);
+          ctx.lineTo(5, -3);
+          ctx.quadraticCurveTo(1, -5, -2, -4);
+          ctx.lineTo(-5, -2);
+          ctx.fill();
+          ctx.fillStyle = "#3e3029";
+          ctx.fillRect(-3.8, -1.1, 1.5, 0.8);
+          ctx.fillRect(2.3, -1.1, 1.5, 0.8);
+          ctx.fillStyle = "#b8785c";
+          ctx.fillRect(-0.4, -0.6, 0.9, 3);
+          ctx.strokeStyle = "#925d4d";
+          ctx.lineWidth = 0.7;
+          ctx.beginPath();
+          ctx.moveTo(-2, 4);
+          ctx.quadraticCurveTo(0, 5, 2, 4);
+          ctx.stroke();
+        }
+
+        ctx.restore();
+        ctx.strokeStyle = identity === "lula" ? "#d1f8af" : "#f4d96b";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      function roundedRect(context, x, y, width, height, radius) {
+        context.beginPath();
+        context.roundRect(x, y, width, height, radius);
+      }
+
+      function placeFood() {
+        const empty = [];
+        for (let y = 0; y < cells; y++) {
+          for (let x = 0; x < cells; x++) {
+            if (!snake.some(segment => segment.x === x && segment.y === y)) empty.push({ x, y });
+          }
+        }
+        food = empty.length ? empty[Math.floor(Math.random() * empty.length)] : null;
+      }
+
+      function reset() {
+        const center = Math.floor(cells / 2);
+        snake = [
+          { x: center, y: center },
+          { x: center + 1, y: center },
+          { x: center + 2, y: center }
+        ];
+        direction = { ...directions.left };
+        nextDirection = { ...direction };
+        score = 0;
+        scoreElement.textContent = score;
+        placeFood();
+        draw();
+      }
+
+      function begin() {
+        clearInterval(timer);
+        reset();
+        state = "running";
+        overlay.hidden = true;
+        pauseButton.textContent = "Pausar";
+        timer = setInterval(tick, Math.max(65, 145 - score * 2));
+      }
+
+      function finish() {
+        clearInterval(timer);
+        timer = null;
+        state = "over";
+        overlayTitle.textContent = "Fim de jogo!";
+        overlayMessage.textContent = `Você fez ${score} ${score === 1 ? "ponto" : "pontos"}. Que tal tentar de novo?`;
+        startButton.textContent = "Jogar novamente";
+        overlay.hidden = false;
+      }
+
+      function tick() {
+        direction = nextDirection;
+        const head = {
+          x: snake[0].x + direction.x,
+          y: snake[0].y + direction.y
+        };
+        const eating = food && head.x === food.x && head.y === food.y;
+        const bodyToCheck = eating ? snake : snake.slice(0, -1);
+        const hitWall = head.x < 0 || head.y < 0 || head.x >= cells || head.y >= cells;
+        const hitSelf = bodyToCheck.some(segment => segment.x === head.x && segment.y === head.y);
+
+        if (hitWall || hitSelf) {
+          finish();
+          return;
+        }
+
+        snake.unshift(head);
+        if (eating) {
+          score += 1;
+          scoreElement.textContent = score;
+          if (score > best) {
+            best = score;
+            bestElement.textContent = best;
+            localStorage.setItem("snake-best", best);
+          }
+          placeFood();
+          clearInterval(timer);
+          timer = setInterval(tick, Math.max(65, 145 - score * 2));
+          if (!food) {
+            finish();
+            return;
+          }
+        } else {
+          snake.pop();
+        }
+        draw();
+      }
+
+      function setDirection(name) {
+        if (state === "ready" || state === "over") begin();
+        if (state !== "running") return;
+        const candidate = directions[name];
+        if (candidate.x + direction.x !== 0 || candidate.y + direction.y !== 0) {
+          nextDirection = { ...candidate };
+        }
+      }
+
+      function togglePause() {
+        if (state === "running") {
+          clearInterval(timer);
+          timer = null;
+          state = "paused";
+          overlayTitle.textContent = "Jogo pausado";
+          overlayMessage.textContent = "Respire fundo. Sua cobrinha espera por você.";
+          startButton.textContent = "Continuar";
+          overlay.hidden = false;
+          pauseButton.textContent = "Continuar";
+        } else if (state === "paused") {
+          state = "running";
+          overlay.hidden = true;
+          pauseButton.textContent = "Pausar";
+          timer = setInterval(tick, Math.max(65, 145 - score * 2));
+        }
+      }
+
+      const keyDirections = {
+        ArrowUp: "up", w: "up", W: "up",
+        ArrowDown: "down", s: "down", S: "down",
+        ArrowLeft: "left", a: "left", A: "left",
+        ArrowRight: "right", d: "right", D: "right"
+      };
+
+      document.addEventListener("keydown", event => {
+        if (keyDirections[event.key]) {
+          event.preventDefault();
+          setDirection(keyDirections[event.key]);
+        } else if (event.code === "Space") {
+          event.preventDefault();
+          if (state === "ready" || state === "over") begin();
+          else togglePause();
+        }
+      });
+
+      document.querySelectorAll(".dpad button").forEach(button => {
+        button.addEventListener("pointerdown", event => {
+          event.preventDefault();
+          setDirection(button.dataset.dir);
+        });
+      });
+
+      startButton.addEventListener("click", () => {
+        if (state === "paused") togglePause();
+        else begin();
+      });
+
+      pauseButton.addEventListener("click", () => {
+        if (state === "ready" || state === "over") begin();
+        else togglePause();
+      });
+
+      let touchStart = null;
+      canvas.addEventListener("pointerdown", event => {
+        touchStart = { x: event.clientX, y: event.clientY };
+      });
+      canvas.addEventListener("pointerup", event => {
+        if (!touchStart) return;
+        const dx = event.clientX - touchStart.x;
+        const dy = event.clientY - touchStart.y;
+        touchStart = null;
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 20) return;
+        setDirection(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up"));
+      });
+
+      reset();
+    })();
+  </script>
+</body>
+</html>
