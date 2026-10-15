@@ -550,7 +550,7 @@
         state = "running";
         overlay.hidden = true;
         pauseButton.textContent = "Pausar";
-        timer = setInterval(tick, Math.max(65, 145 - score * 2));
+        timer = setInterval(tick, Math.max(120, 220 - score * 2));
       }
 
       function finish() {
@@ -590,7 +590,7 @@
           }
           placeFood();
           clearInterval(timer);
-          timer = setInterval(tick, Math.max(65, 145 - score * 2));
+          timer = setInterval(tick, Math.max(120, 220 - score * 2));
           if (!food) {
             finish();
             return;
@@ -624,7 +624,7 @@
           state = "running";
           overlay.hidden = true;
           pauseButton.textContent = "Pausar";
-          timer = setInterval(tick, Math.max(65, 145 - score * 2));
+          timer = setInterval(tick, Math.max(120, 220 - score * 2));
         }
       }
 
