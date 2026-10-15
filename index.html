@@ -53,6 +53,12 @@
       text-transform: uppercase;
     }
 
+    .creator {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.75rem;
+    }
+
     h1 {
       margin: 0;
       font-size: clamp(1.7rem, 7vw, 2.25rem);
@@ -256,6 +262,7 @@
       <div>
         <p class="eyebrow">Um clássico de arcade</p>
         <h1>Jogo da cobrinha Lulinha</h1>
+        <p class="creator">Criado por Juca Aguilera</p>
       </div>
       <div class="stats" aria-label="Pontuação">
         <div class="stat"><span class="stat-label">Pontos</span><strong id="score">0</strong></div>
@@ -292,8 +299,6 @@
       <button type="button" data-dir="down" aria-label="Mover para baixo">↓</button>
       <button type="button" data-dir="right" aria-label="Mover para a direita">→</button>
     </nav>
-
-    <footer class="credits">Criado por Juca Aguilera</footer>
   </main>
 
   <script>
