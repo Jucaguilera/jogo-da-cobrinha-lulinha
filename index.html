@@ -168,6 +168,26 @@
       margin-top: 15px;
     }
 
+    .difficulty-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .difficulty-row select {
+      padding: 8px 12px;
+      border: 1px solid #344338;
+      border-radius: 10px;
+      background: var(--panel);
+      color: #e8eee8;
+      font: inherit;
+    }
+
     .help {
       margin: 0;
       color: var(--muted);
@@ -270,6 +290,15 @@
       </div>
     </header>
 
+    <div class="difficulty-row">
+      <label for="difficulty-select">Dificuldade</label>
+      <select id="difficulty-select">
+        <option value="easy">Fácil</option>
+        <option value="medium">Médio</option>
+        <option value="hard" selected>Difícil</option>
+      </select>
+    </div>
+
     <section class="board-wrap" aria-label="Área do jogo">
       <canvas id="board" width="480" height="480" aria-label="Tabuleiro: Lula é a cobrinha e Bolsonaro é o alimento"></canvas>
       <div class="overlay" id="overlay">
@@ -314,6 +343,12 @@
       const overlayMessage = document.querySelector("#overlay-message");
       const startButton = document.querySelector("#start-button");
       const pauseButton = document.querySelector("#pause-button");
+      const difficultySelect = document.querySelector("#difficulty-select");
+      const difficulties = {
+        easy: { start: 360, minimum: 200 },
+        medium: { start: 280, minimum: 160 },
+        hard: { start: 220, minimum: 120 }
+      };
       const portraits = {
         lula: new Image(),
         bolsonaro: new Image()
@@ -334,6 +369,7 @@
       let best = Number(localStorage.getItem("snake-best") || 0);
       let timer = null;
       let state = "ready";
+      let difficulty = difficultySelect.value;
 
       bestElement.textContent = best;
       portraits.lula.onload = draw;
@@ -544,13 +580,23 @@
         draw();
       }
 
+      function getTickInterval() {
+        const { start, minimum } = difficulties[difficulty];
+        return Math.max(minimum, start - score * 2);
+      }
+
+      function startTimer() {
+        clearInterval(timer);
+        timer = setInterval(tick, getTickInterval());
+      }
+
       function begin() {
         clearInterval(timer);
         reset();
         state = "running";
         overlay.hidden = true;
         pauseButton.textContent = "Pausar";
-        timer = setInterval(tick, Math.max(120, 220 - score * 2));
+        startTimer();
       }
 
       function finish() {
@@ -589,8 +635,7 @@
             localStorage.setItem("snake-best", best);
           }
           placeFood();
-          clearInterval(timer);
-          timer = setInterval(tick, Math.max(120, 220 - score * 2));
+          startTimer();
           if (!food) {
             finish();
             return;
@@ -624,7 +669,7 @@
           state = "running";
           overlay.hidden = true;
           pauseButton.textContent = "Pausar";
-          timer = setInterval(tick, Math.max(120, 220 - score * 2));
+          startTimer();
         }
       }
 
@@ -656,6 +701,11 @@
       startButton.addEventListener("click", () => {
         if (state === "paused") togglePause();
         else begin();
+      });
+
+      difficultySelect.addEventListener("change", () => {
+        difficulty = difficultySelect.value;
+        if (state === "running") startTimer();
       });
 
       pauseButton.addEventListener("click", () => {
